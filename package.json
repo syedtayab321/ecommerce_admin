@@ -15,7 +15,7 @@
     "@tailwindcss/vite": "^4.1.11",
     "chart.js": "^4.5.0",
     "date-fns": "^4.1.0",
-    "firebase": "^10.14.1",
+    "firebase": "^11.9.1",
     "firebaseui": "^6.1.0",
     "formik": "^2.4.6",
     "framer-motion": "^12.19.2",
