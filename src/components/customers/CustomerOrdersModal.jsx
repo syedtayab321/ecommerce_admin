@@ -1,5 +1,5 @@
 import React from 'react';
-import { modalStyles } from './customer.styles';
+import { modalStyles } from './Customer.styles';
 import { formatDate, formatCurrency, getStatusBadge } from './Customer.utils';
 
 const CustomerOrdersModal = ({ customer, orders, onClose }) => {
