@@ -1,5 +1,5 @@
 import React from 'react';
-import { tableStyles } from './customer.styles';
+import { tableStyles } from './Customer.styles';
 import { formatDate, formatCurrency } from './Customer.utils';
 
 const CustomersTable = ({ customers, onSelectCustomer }) => {
