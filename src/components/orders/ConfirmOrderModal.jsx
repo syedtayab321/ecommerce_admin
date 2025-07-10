@@ -1,33 +1,32 @@
 import React, { useState, useEffect } from 'react';
+import { formatCurrency, calculateDiscount } from './order.utils';
 
 const ConfirmOrderModal = ({ 
   isOpen, 
   onClose, 
   onConfirm, 
-  order 
+  order,
+  orderItems 
 }) => {
   const [discount, setDiscount] = useState('');
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Reset form when modal opens/closes
   useEffect(() => {
     if (isOpen) {
-      setDiscount('');
-      setNotes('');
+      setDiscount(order.discount?.toString() || '');
+      setNotes(order.notes || '');
       setIsSubmitting(false);
     }
-  }, [isOpen]);
+  }, [isOpen, order]);
 
-  const calculateTotal = () => {
-    const discountValue = discount ? Number(discount) : 0;
-    const discountAmount = order.total * (discountValue / 100);
-    return (order.total - discountAmount).toFixed(2);
-  };
+  const { discountAmount, finalTotal } = calculateDiscount(
+    order.total,
+    discount ? Number(discount) : 0
+  );
 
   const handleDiscountChange = (e) => {
     const value = e.target.value;
-    // Only allow numbers and empty string
     if (value === '' || (!isNaN(value) && value >= 0 && value <= 100)) {
       setDiscount(value);
     }
@@ -38,7 +37,8 @@ const ConfirmOrderModal = ({
     try {
       await onConfirm({ 
         discount: discount ? Number(discount) : 0, 
-        notes 
+        notes,
+        items: orderItems
       });
     } finally {
       setIsSubmitting(false);
@@ -46,10 +46,6 @@ const ConfirmOrderModal = ({
   };
 
   if (!isOpen) return null;
-
-  const finalTotal = calculateTotal();
-  const discountValue = discount ? Number(discount) : 0;
-  const discountAmount = order.total * (discountValue / 100);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -77,11 +73,11 @@ const ConfirmOrderModal = ({
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-gray-50 p-3 rounded-lg">
                 <p className="text-sm text-gray-500">Order Total</p>
-                <p className="font-semibold">${order.total.toFixed(2)}</p>
+                <p className="font-semibold">{formatCurrency(order.total)}</p>
               </div>
               <div className="bg-gray-50 p-3 rounded-lg">
                 <p className="text-sm text-gray-500">Final Total</p>
-                <p className="font-semibold text-green-600">${finalTotal}</p>
+                <p className="font-semibold text-green-600">{formatCurrency(finalTotal)}</p>
               </div>
             </div>
 
@@ -103,9 +99,9 @@ const ConfirmOrderModal = ({
                   <span className="text-gray-500 sm:text-sm">%</span>
                 </div>
               </div>
-              {discountValue > 0 && (
+              {discount && Number(discount) > 0 && (
                 <p className="mt-1 text-sm text-green-600">
-                  Discount: -${discountAmount.toFixed(2)} ({discountValue}%)
+                  Discount: -{formatCurrency(discountAmount)} ({discount}%)
                 </p>
               )}
             </div>
@@ -121,6 +117,19 @@ const ConfirmOrderModal = ({
                 rows="3"
                 placeholder="Any special instructions..."
               />
+            </div>
+
+            {/* Order Items Summary */}
+            <div className="border-t pt-4">
+              <h3 className="font-medium text-gray-700 mb-2">Order Items</h3>
+              <div className="space-y-2">
+                {orderItems?.map((item) => (
+                  <div key={item.id} className="flex justify-between">
+                    <span>{item.name} × {item.quantity}</span>
+                    <span>{formatCurrency(item.price * item.quantity)}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 

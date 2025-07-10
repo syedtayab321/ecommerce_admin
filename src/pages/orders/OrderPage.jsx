@@ -1,86 +1,36 @@
-import React, { useState } from "react";
-import OrdersTable from "../../components/orders/OrderTable";
+import React from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import OrdersTable from './../../components/orders/OrderTable';
+import { getOrders } from './../../redux/slices/orderSlice';
 
 const OrdersPage = () => {
-  const [orders, setOrders] = useState([
-    {
-      id: "1001",
-      customer: {
-        name: "John Doe",
-        email: "john@example.com",
-      },
-      date: "2023-05-15",
-      status: "pending",
-      total: 125.99,
-      discount: 0,
-      notes: "",
-    },
-    {
-      id: "1002",
-      customer: {
-        name: "Jane Smith",
-        email: "jane@example.com",
-      },
-      date: "2023-05-14",
-      status: "accepted",
-      total: 89.5,
-      discount: 10,
-      notes: "Customer requested express shipping",
-    },
-    {
-      id: "1003",
-      customer: {
-        name: "Bob Johnson",
-        email: "bob@example.com",
-      },
-      date: "2023-05-13",
-      status: "delivered",
-      total: 210.0,
-      discount: 15,
-      notes: "Special corporate discount applied",
-    },
-  ]);
-
-  const handleStatusChange = (
-    orderId,
-    newStatus,
-    { discount = 0, notes = "" } = {}
-  ) => {
-    setOrders(
-      orders.map((order) =>
-        order.id === orderId
-          ? { ...order, status: newStatus, discount, notes }
-          : order
-      )
-    );
-    // Here you would typically make an API call to update the order
-    console.log(
-      `Order ${orderId} updated to ${newStatus} with ${discount}% discount`
-    );
-  };
-
-  const handleDelete = (orderId) => {
-    setOrders(orders.filter((order) => order.id !== orderId));
-    console.log(`Order ${orderId} deleted`);
-  };
+  const dispatch = useDispatch();
+  const { loading } = useSelector(state => state.orders);
 
   const handleView = (order) => {
-    console.log("Viewing order:", order);
-    // You could implement a detailed view modal here
+    console.log('Viewing order:', order);
+    // Implement detailed view modal here
   };
 
   const handlePrint = (order) => {
-    console.log("Printing order:", order);
-    // You could implement print functionality here
+    console.log('Printing order:', order);
+    // Implement print functionality here
+    window.print();
   };
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6">Order Management</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Order Management</h1>
+        <button
+          onClick={() => dispatch(getOrders())}
+          disabled={loading}
+          className="px-4 py-2 bg-gray-100 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-200"
+        >
+          {loading ? 'Refreshing...' : 'Refresh Orders'}
+        </button>
+      </div>
       <OrdersTable
-        orders={orders}
-        onStatusChange={handleStatusChange}
-        onDelete={handleDelete}
         onView={handleView}
         onPrint={handlePrint}
       />

@@ -1,35 +1,50 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FiPlus } from 'react-icons/fi';
+import { useDispatch, useSelector } from 'react-redux';
+import { 
+  fetchCategories, 
+  createCategory, 
+  editCategory, 
+  removeCategory,
+  setCurrentCategory,
+  clearCurrentCategory
+} from '../../redux/slices/categorySlice';
 import CategoriesTable from '../../components/category/CategoryTable';
 import CategoryFilters from '../../components/category/CategoryFilters';
 import CategoryModal from '../../components/category/CategoryModal';
 import Button from '../../components/common/Button';
+import { toast } from 'react-toastify';
 
 const CategoriesPage = () => {
+  const dispatch = useDispatch();
+  const { 
+    items: categories, 
+    loading, 
+    error,
+    currentCategory 
+  } = useSelector((state) => state.categories);
+  
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState(null);
   const [filters, setFilters] = useState({
-    search: '',
-    status: 'active'
+    search: ''
   });
   const [pagination, setPagination] = useState({
     currentPage: 1,
     itemsPerPage: 10
   });
 
-  // Mock data - replace with API calls
-  const categories = [
-    { id: 1, name: 'Electronics', slug: 'electronics', status: 'active', products: 42, createdAt: '2023-01-15' },
-    { id: 2, name: 'Clothing', slug: 'clothing', status: 'active', products: 128, createdAt: '2023-02-20' },
-    { id: 3, name: 'Home & Kitchen', slug: 'home-kitchen', status: 'active', products: 76, createdAt: '2023-03-10' },
-    // ... more categories
-  ];
+  useEffect(() => {
+    dispatch(fetchCategories());
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (error) {
+      toast.error(error.message || 'An error occurred');
+    }
+  }, [error]);
 
   const filteredCategories = categories.filter(cat => {
-    return (
-      cat.name.toLowerCase().includes(filters.search.toLowerCase()) &&
-      (filters.status === 'all' || cat.status === filters.status)
-    );
+    return cat.name.toLowerCase().includes(filters.search.toLowerCase());
   });
 
   const paginatedCategories = filteredCategories.slice(
@@ -38,32 +53,44 @@ const CategoriesPage = () => {
   );
 
   const handleEdit = (category) => {
-    setSelectedCategory(category);
+    dispatch(setCurrentCategory(category));
     setIsModalOpen(true);
   };
 
-  const handleDelete = (id) => {
-    // Confirm and delete logic
+  const handleDelete = async (id) => {
     if (window.confirm('Are you sure you want to delete this category?')) {
-      console.log('Deleting category:', id);
+      try {
+        await dispatch(removeCategory(id));
+        toast.success('Category deleted successfully');
+      } catch (error) {
+        toast.error(error.message || 'Failed to delete category');
+      }
     }
   };
 
-  const handleSubmit = (categoryData) => {
-    console.log('Saving category:', categoryData);
-    setIsModalOpen(false);
-    setSelectedCategory(null);
+  const handleSubmit = async (categoryData) => {
+    try {
+      if (currentCategory) {
+        await dispatch(editCategory({ id: currentCategory.id, categoryData }));
+        toast.success('Category updated successfully');
+      } else {
+        await dispatch(createCategory(categoryData));
+        toast.success('Category created successfully');
+      }
+      setIsModalOpen(false);
+    } catch (error) {
+      toast.error(error.message || 'An error occurred while saving the category');
+    }
   };
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto">
-        {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-800 mb-4 md:mb-0">Categories Management</h1>
           <Button
             onClick={() => {
-              setSelectedCategory(null);
+              dispatch(clearCurrentCategory());
               setIsModalOpen(true);
             }}
             variant="primary"
@@ -73,22 +100,26 @@ const CategoriesPage = () => {
           </Button>
         </div>
 
-        {/* Filters */}
-        <CategoryFilters filters={filters} setFilters={setFilters} />
+        <CategoryFilters 
+          filters={filters} 
+          setFilters={setFilters} 
+          loading={loading}
+        />
 
-        {/* Categories Table */}
         <div className="bg-white rounded-lg shadow overflow-hidden mb-6">
           <CategoriesTable 
             categories={paginatedCategories} 
+            loading={loading}
             onEdit={handleEdit}
             onDelete={handleDelete}
           />
           
-          {/* Pagination */}
           <div className="px-6 py-4 border-t border-gray-200">
             <div className="flex items-center justify-between">
               <div className="text-sm text-gray-700">
-                Showing <span className="font-medium">{(pagination.currentPage - 1) * pagination.itemsPerPage + 1}</span> to{' '}
+                Showing <span className="font-medium">
+                  {(pagination.currentPage - 1) * pagination.itemsPerPage + 1}
+                </span> to{' '}
                 <span className="font-medium">
                   {Math.min(pagination.currentPage * pagination.itemsPerPage, filteredCategories.length)}
                 </span> of{' '}
@@ -121,14 +152,13 @@ const CategoriesPage = () => {
         </div>
       </div>
 
-      {/* Category Modal */}
       <CategoryModal
         isOpen={isModalOpen}
         onClose={() => {
           setIsModalOpen(false);
-          setSelectedCategory(null);
+          dispatch(clearCurrentCategory());
         }}
-        initialValues={selectedCategory}
+        initialValues={currentCategory}
         onSubmit={handleSubmit}
       />
     </div>

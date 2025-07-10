@@ -1,118 +1,153 @@
 import React from 'react';
 import { FiEdit2, FiTrash2 } from 'react-icons/fi';
-import { FaStar } from 'react-icons/fa';
 
 const ProductsTable = ({ products, onEdit, onDelete }) => {
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(value);
+  };
+
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString();
+    if (!dateString) return 'N/A';
+    try {
+      const date = new Date(dateString);
+      return isNaN(date) ? 'N/A' : date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch {
+      return 'N/A';
+    }
   };
 
   const getStatusBadge = (status) => {
     const statusClasses = {
-      Published: 'bg-green-100 text-green-800',
-      Draft: 'bg-yellow-100 text-yellow-800',
-      Archived: 'bg-gray-100 text-gray-800'
+      published: 'bg-green-100 text-green-800',
+      draft: 'bg-yellow-100 text-yellow-800',
+      archived: 'bg-gray-100 text-gray-800'
     };
     return (
-      <span className={`px-2 py-1 text-xs font-medium rounded-full ${statusClasses[status]}`}>
-        {status}
+      <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${statusClasses[status] || 'bg-gray-100 text-gray-800'}`}>
+        {status ? status.charAt(0).toUpperCase() + status.slice(1) : 'N/A'}
       </span>
     );
   };
 
-  const getStockBadge = (stockStatus) => {
-    const stockClasses = {
-      'In Stock': 'bg-green-100 text-green-800',
-      'Low Stock': 'bg-yellow-100 text-yellow-800',
-      'Out of Stock': 'bg-red-100 text-red-800'
-    };
+  const getStockDisplay = (stock) => {
+    if (stock === undefined || stock === null) return 'N/A';
     return (
-      <span className={`px-2 py-1 text-xs font-medium rounded-full ${stockClasses[stockStatus]}`}>
-        {stockStatus}
-      </span>
+      <div className="flex flex-col">
+        <span className="font-medium">{stock}</span>
+        <span className={`text-xs mt-1 px-2 py-0.5 rounded-full ${
+          stock > 10 ? 'bg-green-100 text-green-800' :
+          stock > 0 ? 'bg-yellow-100 text-yellow-800' :
+          'bg-red-100 text-red-800'
+        }`}>
+          {stock > 10 ? 'In Stock' : stock > 0 ? 'Low Stock' : 'Out of Stock'}
+        </span>
+      </div>
     );
   };
 
   return (
-    <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200">
-        <thead className="bg-gray-50">
-          <tr>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Product
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              SKU
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Category
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Price
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Stock
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Status
-            </th>
-            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Created
-            </th>
-            <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-              Actions
-            </th>
-          </tr>
-        </thead>
-        <tbody className="bg-white divide-y divide-gray-200">
-          {products.map((product) => (
-            <tr key={product.id} className="hover:bg-gray-50">
-              <td className="px-6 py-4 whitespace-nowrap">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0 h-10 w-10 bg-gray-200 rounded-md flex items-center justify-center">
-                    <FaStar className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <div className="ml-4">
-                    <div className="text-sm font-medium text-gray-900">{product.name}</div>
-                  </div>
-                </div>
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {product.sku}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {product.category}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                ${product.price}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                {getStockBadge(product.stockStatus)}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap">
-                {getStatusBadge(product.status)}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                {formatDate(product.createdAt)}
-              </td>
-              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                <button
-                  onClick={() => onEdit(product.id)}
-                  className="text-indigo-600 hover:text-indigo-900 mr-4"
-                >
-                  <FiEdit2 className="h-5 w-5" />
-                </button>
-                <button
-                  onClick={() => onDelete(product.id)}
-                  className="text-red-600 hover:text-red-900"
-                >
-                  <FiTrash2 className="h-5 w-5" />
-                </button>
-              </td>
+    <div className="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Product
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Category
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Price
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Cost
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Stock
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Status
+              </th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Updated
+              </th>
+              <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {products.map((product) => (
+              <tr key={product.id} className="hover:bg-gray-50 transition-colors">
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0 h-10 w-10 rounded-md overflow-hidden bg-gray-100 border border-gray-200">
+                      <img
+                        src={product.images || "https://cdn-icons-png.flaticon.com/512/1440/1440523.png"}
+                        alt={product.name}
+                        className="h-full w-full object-cover"
+                        onError={(e) => {
+                          e.target.src = "https://cdn-icons-png.flaticon.com/512/1440/1440523.png";
+                        }}
+                      />
+                    </div>
+                    <div className="ml-4">
+                      <div className="text-sm font-medium text-gray-900">{product.name || 'N/A'}</div>
+                      <div className="text-sm text-gray-500">{product.sku || 'N/A'}</div>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {product.category || 'N/A'}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  {product.price ? formatCurrency(product.price) : 'N/A'}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {product.costPrice ? formatCurrency(product.costPrice) : 'N/A'}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {getStockDisplay(product.stock)}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {getStatusBadge(product.status)}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {formatDate(product.updatedAt || product.createdAt)}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <div className="flex justify-end items-center space-x-2">
+                    <button
+                      onClick={() => onEdit(product.id)}
+                      className="text-gray-500 hover:text-indigo-600 p-1 rounded-full hover:bg-indigo-50"
+                      title="Edit"
+                    >
+                      <FiEdit2 className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => onDelete(product.id)}
+                      className="text-gray-500 hover:text-red-600 p-1 rounded-full hover:bg-red-50"
+                      title="Delete"
+                    >
+                      <FiTrash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 };

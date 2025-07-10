@@ -8,25 +8,23 @@ const CategoryModal = ({ isOpen, onClose, initialValues, onSubmit }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validationSchema = Yup.object().shape({
-    name: Yup.string().required('Category name is required'),
-    slug: Yup.string()
-      .required('Slug is required')
-      .matches(/^[a-z0-9-]+$/, 'Slug can only contain lowercase letters, numbers and hyphens'),
-    status: Yup.string().required('Status is required')
+    name: Yup.string()
+      .required('Category name is required')
+      .max(100, 'Name must be less than 100 characters')
   });
 
   const formik = useFormik({
     initialValues: initialValues || {
       name: '',
-      slug: '',
-      status: 'active',
-      description: ''
     },
     validationSchema,
     onSubmit: async (values) => {
       setIsSubmitting(true);
       try {
         await onSubmit(values);
+        onClose();
+      } catch (error) {
+        console.error('Submission error:', error);
       } finally {
         setIsSubmitting(false);
       }
@@ -85,93 +83,29 @@ const CategoryModal = ({ isOpen, onClose, initialValues, onSubmit }) => {
                     <p className="mt-1 text-sm text-red-600">{formik.errors.name}</p>
                   )}
                 </div>
-
-                {/* Slug Field */}
-                <div className="sm:col-span-6">
-                  <label htmlFor="slug" className="block text-sm font-medium text-gray-700 mb-1">
-                    Slug *
-                  </label>
-                  <input
-                    type="text"
-                    id="slug"
-                    name="slug"
-                    value={formik.values.slug}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    className={`w-full border ${
-                      formik.touched.slug && formik.errors.slug 
-                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                        : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                    } rounded-md shadow-sm py-2 px-3 focus:outline-none sm:text-sm`}
-                  />
-                  {formik.touched.slug && formik.errors.slug && (
-                    <p className="mt-1 text-sm text-red-600">{formik.errors.slug}</p>
-                  )}
-                </div>
-
-                {/* Status Field */}
-                <div className="sm:col-span-3">
-                  <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
-                    Status *
-                  </label>
-                  <select
-                    id="status"
-                    name="status"
-                    value={formik.values.status}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
-                    className={`w-full border ${
-                      formik.touched.status && formik.errors.status 
-                        ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                        : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
-                    } rounded-md shadow-sm py-2 px-3 focus:outline-none sm:text-sm`}
-                  >
-                    <option value="active">Active</option>
-                    <option value="inactive">Inactive</option>
-                    <option value="archived">Archived</option>
-                  </select>
-                  {formik.touched.status && formik.errors.status && (
-                    <p className="mt-1 text-sm text-red-600">{formik.errors.status}</p>
-                  )}
-                </div>
-
-                {/* Description Field */}
-                <div className="sm:col-span-6">
-                  <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                    Description
-                  </label>
-                  <textarea
-                    id="description"
-                    name="description"
-                    rows={3}
-                    value={formik.values.description}
-                    onChange={formik.handleChange}
-                    className="w-full border border-gray-300 focus:ring-blue-500 focus:border-blue-500 rounded-md shadow-sm py-2 px-3 focus:outline-none sm:text-sm"
-                  />
-                </div>
               </div>
             </div>
-          </form>
 
-          {/* Footer */}
-          <div className="bg-gray-50 px-4 py-3 flex justify-end space-x-3 border-t border-gray-200 sticky bottom-0">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={onClose}
-              disabled={isSubmitting}
-            >
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="primary"
-              onClick={formik.handleSubmit}
-              loading={isSubmitting}
-            >
-              {initialValues ? 'Update Category' : 'Add Category'}
-            </Button>
-          </div>
+            {/* Footer */}
+            <div className="bg-gray-50 px-4 py-3 flex justify-end space-x-3 border-t border-gray-200 sticky bottom-0">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={onClose}
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="button"
+                variant="primary"
+                onClick={formik.handleSubmit}
+                loading={isSubmitting}
+              >
+                {initialValues ? 'Update Category' : 'Add Category'}
+              </Button>
+            </div>
+          </form>
         </div>
       </div>
     </>

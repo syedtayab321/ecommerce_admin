@@ -6,8 +6,22 @@ export const formatDate = (dateString) => {
 export const formatCurrency = (amount) => {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'USD'
   }).format(amount);
+};
+
+export const calculateDiscount = (total, discountPercentage) => {
+  const discountAmount = total * (discountPercentage / 100);
+  return {
+    discountAmount,
+    finalTotal: total - discountAmount
+  };
+};
+
+export const validateDiscount = (value) => {
+  if (value === '') return true;
+  const num = Number(value);
+  return !isNaN(num) && num >= 0 && num <= 100;
 };
 
 export const getPaymentMethodIcon = (method) => {
