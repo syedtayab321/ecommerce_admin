@@ -3,6 +3,7 @@ import { auth, firestore } from '../../firebase/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { toast } from 'react-toastify';
+import { onAuthStateChanged } from 'firebase/auth';
 
 // Async thunk for admin login
 export const loginAdmin = createAsyncThunk(
@@ -94,6 +95,45 @@ export const checkPersistedAuth = createAsyncThunk(
   }
 );
 
+export const listenToAuthChanges = createAsyncThunk(
+  'auth/listenToAuthChanges',
+  async (_, { dispatch }) => {
+    return new Promise((resolve) => {
+      const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          try {
+            const userDoc = await getDoc(doc(firestore, 'admins', user.uid));
+            if (userDoc.exists() && userDoc.data().role === 'admin') {
+              dispatch(setAuthState({
+                user: {
+                  uid: user.uid,
+                  email: user.email,
+                  role: userDoc.data().role
+                },
+                isAuthenticated: true
+              }));
+            } else {
+              await auth.signOut();
+              localStorage.removeItem('adminAuth');
+              dispatch(clearAuthState());
+            }
+          } catch (error) {
+            console.error('Error verifying admin status:', error);
+            dispatch(clearAuthState());
+          }
+        } else {
+          localStorage.removeItem('adminAuth');
+          dispatch(clearAuthState());
+        }
+      });
+      
+      // Return the unsubscribe function directly
+      resolve(unsubscribe);
+    });
+  }
+);
+
+
 // Logout action
 export const logoutAdmin = createAsyncThunk(
   'auth/logoutAdmin',
@@ -109,14 +149,25 @@ const authSlice = createSlice({
     user: null,
     loading: false,
     error: null,
-    isAuthenticated: false
+    isAuthenticated: false,
+    authChecked: false,
   },
-  reducers: {
+ reducers: {
     clearError: (state) => {
       state.error = null;
     },
     setLoading: (state, action) => {
       state.loading = action.payload;
+    },
+    setAuthState: (state, action) => {
+      state.user = action.payload.user;
+      state.isAuthenticated = action.payload.isAuthenticated;
+      state.authChecked = true;
+    },
+    clearAuthState: (state) => {
+      state.user = null;
+      state.isAuthenticated = false;
+      state.authChecked = true;
     }
   },
   extraReducers: (builder) => {
@@ -172,5 +223,5 @@ const authSlice = createSlice({
   }
 });
 
-export const { clearError, setLoading } = authSlice.actions;
+export const { clearError, setLoading, setAuthState, clearAuthState } = authSlice.actions;
 export default authSlice.reducer;

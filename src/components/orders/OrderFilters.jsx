@@ -31,7 +31,7 @@ const OrderFilters = ({
             type="text"
             value={searchTerm}
             onChange={onSearchChange}
-            placeholder="Search orders..."
+            placeholder="Search by order ID or customer..."
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
           />
         </div>
@@ -44,7 +44,7 @@ const OrderFilters = ({
             className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
           >
             <option value="all">All Statuses</option>
-            <option value="pending">Pending</option>
+            <option value="placed">Placed</option>
             <option value="accepted">Accepted</option>
             <option value="delivered">Delivered</option>
             <option value="cancelled">Cancelled</option>
@@ -62,6 +62,7 @@ const OrderFilters = ({
             <option value="today">Today</option>
             <option value="week">This Week</option>
             <option value="month">This Month</option>
+            <option value="year">This Year</option>
           </select>
         </div>
       </div>

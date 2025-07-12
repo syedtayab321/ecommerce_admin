@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { formatCurrency, calculateDiscount } from './order.utils';
+import { useDispatch} from 'react-redux';
+import { getOrders } from './../../redux/slices/orderSlice';
 
 const ConfirmOrderModal = ({ 
   isOpen, 
@@ -11,17 +13,21 @@ const ConfirmOrderModal = ({
   const [discount, setDiscount] = useState('');
   const [notes, setNotes] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState('');
+  const dispatch = useDispatch();
+
 
   useEffect(() => {
     if (isOpen) {
       setDiscount(order.discount?.toString() || '');
       setNotes(order.notes || '');
       setIsSubmitting(false);
+      setError('');
     }
   }, [isOpen, order]);
 
   const { discountAmount, finalTotal } = calculateDiscount(
-    order.total,
+    order.totalAmount,
     discount ? Number(discount) : 0
   );
 
@@ -33,13 +39,24 @@ const ConfirmOrderModal = ({
   };
 
   const handleSubmit = async () => {
-    setIsSubmitting(true);
+    if (isSubmitting) return;
+    
     try {
+      setIsSubmitting(true);
+      setError('');
+      
+      if (orderItems.length === 0) {
+        throw new Error('Order must contain at least one item');
+      }
+      
       await onConfirm({ 
         discount: discount ? Number(discount) : 0, 
         notes,
         items: orderItems
       });
+      dispatch(getOrders());
+    } catch (error) {
+      setError(error.message || 'Failed to confirm order');
     } finally {
       setIsSubmitting(false);
     }
@@ -57,6 +74,7 @@ const ConfirmOrderModal = ({
               onClick={onClose}
               className="text-gray-500 hover:text-gray-700"
               aria-label="Close"
+              disabled={isSubmitting}
             >
               <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -64,16 +82,23 @@ const ConfirmOrderModal = ({
             </button>
           </div>
 
+          {error && (
+            <div className="mt-4 bg-red-100 border-l-4 border-red-500 text-red-700 p-3 rounded">
+              <p>{error}</p>
+            </div>
+          )}
+
           <div className="mt-6 space-y-4">
             <div className="bg-blue-50 p-4 rounded-lg">
-              <p className="font-medium text-gray-700">Customer: {order.customer.name}</p>
-              <p className="text-gray-600">{order.customer.email}</p>
+              <p className="font-medium text-gray-700">Customer ID: {order.userId}</p>
+              <p className="text-gray-600">Shipping: {order.shippingAddress}</p>
+              <p className="text-gray-600">Payment: {order.paymentMethod}</p>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-gray-50 p-3 rounded-lg">
                 <p className="text-sm text-gray-500">Order Total</p>
-                <p className="font-semibold">{formatCurrency(order.total)}</p>
+                <p className="font-semibold">{formatCurrency(order.totalAmount)}</p>
               </div>
               <div className="bg-gray-50 p-3 rounded-lg">
                 <p className="text-sm text-gray-500">Final Total</p>
@@ -94,6 +119,7 @@ const ConfirmOrderModal = ({
                   onChange={handleDiscountChange}
                   placeholder="0"
                   className="focus:ring-blue-500 focus:border-blue-500 block w-full pl-3 pr-12 py-2 sm:text-sm border-gray-300 rounded-md"
+                  disabled={isSubmitting}
                 />
                 <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
                   <span className="text-gray-500 sm:text-sm">%</span>
@@ -116,17 +142,38 @@ const ConfirmOrderModal = ({
                 className="focus:ring-blue-500 focus:border-blue-500 block w-full sm:text-sm border-gray-300 rounded-md"
                 rows="3"
                 placeholder="Any special instructions..."
+                disabled={isSubmitting}
               />
             </div>
 
-            {/* Order Items Summary */}
             <div className="border-t pt-4">
-              <h3 className="font-medium text-gray-700 mb-2">Order Items</h3>
-              <div className="space-y-2">
-                {orderItems?.map((item) => (
-                  <div key={item.id} className="flex justify-between">
-                    <span>{item.name} × {item.quantity}</span>
-                    <span>{formatCurrency(item.price * item.quantity)}</span>
+              <h3 className="font-medium text-gray-700 mb-2">Order Items ({orderItems.length})</h3>
+              <div className="space-y-3">
+                {orderItems.map((item) => (
+                  <div key={item.productId} className="flex items-start">
+                    <div className="flex-shrink-0 h-16 w-16 rounded-md overflow-hidden bg-gray-100">
+                      {item.imageUrl ? (
+                        <img src={item.imageUrl} alt={item.name} className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="h-full w-full flex items-center justify-center text-gray-400">
+                          <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    <div className="ml-4 flex-1">
+                      <div className="flex justify-between">
+                        <h4 className="text-sm font-medium text-gray-900">{item.name}</h4>
+                        <p className="text-sm font-medium text-gray-900">{formatCurrency(item.price * item.quantity)}</p>
+                      </div>
+                      <div className="mt-1 text-sm text-gray-500">
+                        <p>Qty: {item.quantity}</p>
+                        <p>Price: {formatCurrency(item.price)} each</p>
+                        {item.size && <p>Size: {item.size}</p>}
+                        {item.color && <p>Color: {item.color}</p>}
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>

@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { logoutAdmin } from "../../redux/slices/authSlice";
 import {
   FaHome,
   FaBox,
@@ -51,11 +53,18 @@ const navItems = [
 const Sidebar = ({ onSelect, isOpen, setIsOpen }) => {
   const [activeItem, setActiveItem] = useState("dashboard");
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
-  const handleLogout = () => {
-    console.log('User logged out');
-    // Add your actual logout logic here
-    setShowLogoutModal(false);
+  const handleLogout = async () => {
+    try {
+      await dispatch(logoutAdmin()).unwrap();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    } finally {
+      setShowLogoutModal(false);
+    }
   };
 
   const handleClick = (link) => {
@@ -146,7 +155,6 @@ const Sidebar = ({ onSelect, isOpen, setIsOpen }) => {
 
       {/* Bottom Menu */}
       <div className="p-4 border-t border-gray-700 space-y-2">
-        
         <button
           onClick={() => setShowLogoutModal(true)}
           className={`flex w-full items-center gap-3 rounded-lg p-3 text-gray-300 hover:bg-gray-700 transition-all duration-200 ${
@@ -157,7 +165,9 @@ const Sidebar = ({ onSelect, isOpen, setIsOpen }) => {
           {isOpen && <span className="text-sm font-medium">Logout</span>}
         </button>
       </div>
-       <LogoutModal
+
+      {/* Logout Modal */}
+      <LogoutModal
         isOpen={showLogoutModal}
         onClose={() => setShowLogoutModal(false)}
         onLogout={handleLogout}

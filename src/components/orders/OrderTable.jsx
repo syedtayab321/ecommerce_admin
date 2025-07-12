@@ -1,4 +1,4 @@
-import React, { useEffect,useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { FiEye, FiPrinter, FiTrash2, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import { useDispatch, useSelector } from 'react-redux';
 import { 
@@ -30,21 +30,36 @@ const OrdersTable = ({
   
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [errorMessage, setErrorMessage] = useState('');
   const ordersPerPage = 10;
 
   useEffect(() => {
-    dispatch(getOrders(filters));
+    const loadOrders = async () => {
+      try {
+        await dispatch(getOrders(filters)).unwrap();
+        setErrorMessage('');
+      } catch (error) {
+        setErrorMessage(error.message || 'Failed to load orders');
+      }
+    };
+    
+    loadOrders();
   }, [dispatch, filters]);
 
-  const handleStatusAction = (order) => {
-    dispatch(setCurrentOrder(order));
-    if (order.status === 'pending') {
-      setShowConfirmModal(true);
-    } else if (order.status === 'accepted') {
-      dispatch(changeOrderStatus({ 
-        orderId: order.id, 
-        status: 'delivered' 
-      }));
+  const handleStatusAction = async (order) => {
+    try {
+      dispatch(setCurrentOrder(order));
+      if (order.status === 'placed') { // Changed from 'pending' to 'placed'
+        setShowConfirmModal(true);
+      } else if (order.status === 'accepted') {
+        await dispatch(changeOrderStatus({ 
+          orderId: order.id, 
+          status: 'delivered' 
+        })).unwrap();
+        dispatch(getOrders);
+      }
+    } catch (error) {
+      setErrorMessage(error.message || 'Failed to update order status');
     }
   };
 
@@ -57,8 +72,9 @@ const OrdersTable = ({
         items: currentOrder.items || []
       })).unwrap();
       setShowConfirmModal(false);
+      setErrorMessage('');
     } catch (error) {
-      console.error('Failed to confirm order:', error);
+      setErrorMessage(error.message || 'Failed to confirm order');
     }
   };
 
@@ -66,8 +82,9 @@ const OrdersTable = ({
     if (window.confirm('Are you sure you want to delete this order?')) {
       try {
         await dispatch(removeOrder(orderId)).unwrap();
+        setErrorMessage('');
       } catch (error) {
-        console.error('Failed to delete order:', error);
+        setErrorMessage(error.message || 'Failed to delete order');
       }
     }
   };
@@ -106,12 +123,14 @@ const OrdersTable = ({
     return <div className="text-center py-8">Loading orders...</div>;
   }
 
-  if (error) {
-    return <div className="text-center py-8 text-red-500">Error: {error}</div>;
-  }
-
   return (
     <>
+      {error && (
+        <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-4" role="alert">
+          <p>{errorMessage || error}</p>
+        </div>
+      )}
+
       <OrderFilters
         searchTerm={filters.searchTerm}
         onSearchChange={handleSearchChange}
@@ -139,6 +158,9 @@ const OrdersTable = ({
                 Status
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Items
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Total
               </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -155,11 +177,11 @@ const OrdersTable = ({
                     <div className="text-sm font-medium text-gray-900">#{order.id}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">{order.customer.name}</div>
-                    <div className="text-sm text-gray-500">{order.customer.email}</div>
+                    <div className="text-sm font-medium text-gray-900">{order.userId}</div>
+                    <div className="text-sm text-gray-500">{order.shippingAddress}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-500">{formatDate(order.createdAt)}</div>
+                    <div className="text-sm text-gray-500">{formatDate(order.orderDate)}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <OrderStatusBadge 
@@ -167,9 +189,14 @@ const OrdersTable = ({
                       onActionClick={() => handleStatusAction(order)}
                     />
                   </td>
+                  <td className="px-6 py-4">
+                    <div className="text-sm text-gray-900">
+                      {order.items?.length || 0} items
+                    </div>
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">
-                      {formatCurrency(order.total)}
+                      {formatCurrency(order.totalAmount)}
                       {order.discount > 0 && (
                         <span className="ml-2 text-xs text-green-600">
                           ({order.discount}% off)
@@ -206,7 +233,7 @@ const OrdersTable = ({
               ))
             ) : (
               <tr>
-                <td colSpan="6" className="px-6 py-4 text-center text-sm text-gray-500">
+                <td colSpan="7" className="px-6 py-4 text-center text-sm text-gray-500">
                   No orders found matching your criteria
                 </td>
               </tr>
@@ -255,7 +282,6 @@ const OrdersTable = ({
                   <FiChevronLeft className="h-5 w-5" />
                 </button>
                 
-                {/* Page numbers */}
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                   <button
                     key={page}

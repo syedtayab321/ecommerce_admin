@@ -2,7 +2,6 @@ import {
   collection, 
   doc, 
   getDocs, 
-  addDoc, 
   updateDoc, 
   deleteDoc, 
   query, 
@@ -13,15 +12,16 @@ import {
 } from 'firebase/firestore';
 import { db } from './../../firebase/firebase';
 
-// Fetch all orders with optional filters
 export const fetchOrders = async (filters = {}) => {
   try {
     let q = collection(db, 'orders');
     
+    // Status filter
     if (filters.status && filters.status !== 'all') {
       q = query(q, where('status', '==', filters.status));
     }
     
+    // Date filter
     if (filters.dateFilter && filters.dateFilter !== 'all') {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -42,43 +42,34 @@ export const fetchOrders = async (filters = {}) => {
       }
       
       if (startDate) {
-        q = query(q, where('createdAt', '>=', startDate));
+        q = query(q, where('orderDate', '>=', startDate));
       }
     }
     
+    // Search filter
     if (filters.searchTerm) {
       q = query(
         q,
-        where('customer.name', '>=', filters.searchTerm),
-        where('customer.name', '<=', filters.searchTerm + '\uf8ff')
+        where('userId', '>=', filters.searchTerm),
+        where('userId', '<=', filters.searchTerm + '\uf8ff')
       );
     }
     
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const orders = querySnapshot.docs.map(doc => ({ 
+      id: doc.id, 
+      ...doc.data(),
+      // Convert Firestore Timestamp to Date if needed
+      orderDate: doc.data().orderDate?.toDate() || doc.data().orderDate
+    }));
+    
+    return orders;
   } catch (error) {
     console.error('Error fetching orders:', error);
-    throw error;
+    throw new Error('Failed to fetch orders. Please try again.');
   }
 };
 
-// Create a new order
-export const createOrder = async (orderData) => {
-  try {
-    const docRef = await addDoc(collection(db, 'orders'), {
-      ...orderData,
-      status: 'pending',
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    });
-    return { id: docRef.id, ...orderData };
-  } catch (error) {
-    console.error('Error creating order:', error);
-    throw error;
-  }
-};
-
-// Update order status and optionally apply discount
 export const updateOrderStatus = async (orderId, status, { discount = 0, notes = '' } = {}) => {
   try {
     const orderRef = doc(db, 'orders', orderId);
@@ -93,15 +84,19 @@ export const updateOrderStatus = async (orderId, status, { discount = 0, notes =
     return { id: orderId, status, discount, notes };
   } catch (error) {
     console.error('Error updating order status:', error);
-    throw error;
+    throw new Error('Failed to update order status. Please try again.');
   }
 };
 
-// Confirm order and update product quantities
 export const confirmOrder = async (orderId, { discount = 0, notes = '' }, orderItems) => {
   try {
     const batch = writeBatch(db);
     const orderRef = doc(db, 'orders', orderId);
+    
+    // Validate items
+    if (!Array.isArray(orderItems) || orderItems.length === 0) {
+      throw new Error('Order must contain at least one item');
+    }
     
     // Update order status
     batch.update(orderRef, {
@@ -112,29 +107,32 @@ export const confirmOrder = async (orderId, { discount = 0, notes = '' }, orderI
     });
     
     // Update product quantities
-    orderItems.forEach(item => {
+    for (const item of orderItems) {
+      if (!item.productId) {
+        throw new Error('All items must have a productId');
+      }
+      
       const productRef = doc(db, 'products', item.productId);
       batch.update(productRef, {
         stock: increment(-item.quantity),
         updatedAt: serverTimestamp()
       });
-    });
+    }
     
     await batch.commit();
     return { id: orderId, status: 'accepted', discount, notes };
   } catch (error) {
     console.error('Error confirming order:', error);
-    throw error;
+    throw new Error(error.message || 'Failed to confirm order. Please try again.');
   }
 };
 
-// Delete an order
 export const deleteOrder = async (orderId) => {
   try {
     await deleteDoc(doc(db, 'orders', orderId));
     return orderId;
   } catch (error) {
     console.error('Error deleting order:', error);
-    throw error;
+    throw new Error('Failed to delete order. Please try again.');
   }
 };

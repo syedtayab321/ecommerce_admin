@@ -20,7 +20,7 @@ import Button from '../../components/common/Button';
 import ProductModal from '../../components/Product/AddProductModal';
 import DeleteConfirmationModal from '../../components/common/deleteConfirmationModal';
 import { toast } from 'react-toastify';
-import emptyStateImage from './../../../public/Assets/images/empty-state.png';
+import emptyStateImage from './../../assets/images/empty-state.png';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 const ProductsPage = () => {
