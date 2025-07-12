@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux';
 import { Navigate, Outlet } from 'react-router-dom';
 import { auth } from './../firebase/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
-import LoadingSpinner from '../components/common/LoadingSpinner';
+import Spinner from '../components/common/Spinner';
 
 const ProtectedRoute = ({ redirectPath = '/login' }) => {
   const { isAuthenticated, loading } = useSelector((state) => state.auth);
@@ -19,7 +19,7 @@ const ProtectedRoute = ({ redirectPath = '/login' }) => {
   }, []);
 
   if (checkingAuth || loading) {
-    return <LoadingSpinner fullPage />;
+    return <Spinner fullPage />;
   }
 
   return isAuthenticated ? <Outlet /> : <Navigate to={redirectPath} replace />;
