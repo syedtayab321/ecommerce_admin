@@ -5,7 +5,7 @@ import { listenToAuthChanges } from './redux/slices/authSlice';
 import LoginForm from './pages/auth/loginPage';
 import MainPage from './pages/main/MainPage';
 import ProtectedRoute from './routes/protectedRoute';
-import {LoadingSpinner} from './components/common/LoadingSpinner';
+import LoadingSpinner from './components/common/LoadingSpinner';
 
 function App() {
   const dispatch = useDispatch();
@@ -29,7 +29,7 @@ function App() {
 
   // Show loading spinner while checking auth state
   if (!authChecked) {
-    return <LoadingSpinner fullPage />;
+    return <LoadingSpinner/>;
   }
 
   return (
