@@ -21,7 +21,7 @@ import ProductModal from '../../components/Product/AddProductModal';
 import DeleteConfirmationModal from '../../components/common/deleteConfirmationModal';
 import { toast } from 'react-toastify';
 import emptyStateImage from './../../assets/images/empty-state.png';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
+import Spinner from '../../components/common/Spinner';
 
 const ProductsPage = () => {
   const navigate = useNavigate();
@@ -125,7 +125,7 @@ const ProductsPage = () => {
         {processing && (
           <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
             <div className="bg-white p-8 rounded-lg shadow-xl text-center max-w-md">
-              <LoadingSpinner size="lg" className="mx-auto mb-4" />
+              <Spinner />
               <h3 className="text-lg font-medium text-gray-900 mb-2">
                 {currentProduct ? 'Updating Product...' : 'Creating Product...'}
               </h3>
@@ -159,7 +159,7 @@ const ProductsPage = () => {
         <div className="bg-white rounded-lg shadow overflow-hidden mb-6">
           {loading ? (
             <div className="p-8 text-center">
-              <LoadingSpinner size="md" className="mx-auto" />
+              <Spinner/>
               <p className="mt-4 text-gray-500">Loading products...</p>
             </div>
           ) : products.length === 0 ? (
