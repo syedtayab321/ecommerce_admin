@@ -9,14 +9,11 @@ import {
   FaShoppingCart,
   FaStar,
   FaUsers,
-  FaCog,
-  FaImage,
   FaComments,
   FaBars,
   FaTimes,
   FaSignOutAlt,
   FaUserCircle,
-  FaStore,
 } from "react-icons/fa";
 import LogoutModal from './LogoutModal';
 

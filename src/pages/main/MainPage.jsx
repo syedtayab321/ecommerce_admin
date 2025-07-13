@@ -1,10 +1,12 @@
-import React, { useState } from "react";
+import  { useState } from "react";
 import Sidebar from './../../components/other/Sidebar';
 import Dashboard from './../dashboard/Dashboard';
 import ProductsPage from './../Product/ProductPage';
 import CategoriesPage from './../category/CategoryPage';
 import OrdersPage from './../orders/OrderPage';
 import CustomersPage from "./../customer/CustomerPage";
+import MessagingPage from "./../messages/MessagePage"; // Import the messaging component
+
 const MainPage = () => {
   const [selectedSection, setSelectedSection] = useState("dashboard");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
@@ -20,6 +22,7 @@ const MainPage = () => {
         onSelect={handleSelect}
         isOpen={isSidebarOpen}
         setIsOpen={setIsSidebarOpen}
+        selectedSection={selectedSection} // Pass the selected section to highlight active item
       />
 
       {/* Main Content */}
@@ -35,6 +38,7 @@ const MainPage = () => {
           {selectedSection === "categories" && <CategoriesPage/>}
           {selectedSection === "orders" && <OrdersPage/>}
           {selectedSection === "customers" && <CustomersPage/>}
+          {selectedSection === "messages" && <MessagingPage/>} {/* Add messaging page */}
         </div>
       </div>
     </div>
