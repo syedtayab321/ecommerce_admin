@@ -1,20 +1,17 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import { auth, firestore } from '../../firebase/firebase';
 import { doc, getDoc } from 'firebase/firestore';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged } from 'firebase/auth';
 import { toast } from 'react-toastify';
-import { onAuthStateChanged } from 'firebase/auth';
 
 // Async thunk for admin login
 export const loginAdmin = createAsyncThunk(
   'auth/loginAdmin',
   async ({ email, password, rememberMe }, { rejectWithValue }) => {
     try {
-      // 1. Authenticate with Firebase Auth
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // 2. Check admin role in Firestore
       const userDoc = await getDoc(doc(firestore, 'admins', user.uid));
       
       if (!userDoc.exists()) {
@@ -29,11 +26,10 @@ export const loginAdmin = createAsyncThunk(
         throw new Error('Insufficient permissions');
       }
 
-      // 3. Save to localStorage if rememberMe is true
       if (rememberMe) {
         localStorage.setItem(
           'adminAuth',
-          JSON.stringify({ email, uid: user.uid }) // Removed password from storage for security
+          JSON.stringify({ email, uid: user.uid })
         );
       } else {
         localStorage.removeItem('adminAuth');
@@ -73,13 +69,11 @@ export const checkPersistedAuth = createAsyncThunk(
       
       const { email, uid } = JSON.parse(persistedAuth);
       
-      // Verify the user is still authenticated
       if (!auth.currentUser || auth.currentUser.uid !== uid) {
         localStorage.removeItem('adminAuth');
         return null;
       }
       
-      // Verify admin role again
       const userDoc = await getDoc(doc(firestore, 'admins', uid));
       if (!userDoc.exists() || userDoc.data().role !== 'admin') {
         await auth.signOut();
@@ -89,12 +83,14 @@ export const checkPersistedAuth = createAsyncThunk(
       
       return { uid, email, role: userDoc.data().role };
     } catch (error) {
+      console.log(error);
       localStorage.removeItem('adminAuth');
       return rejectWithValue('Session validation failed');
     }
   }
 );
 
+// Listen to auth changes
 export const listenToAuthChanges = createAsyncThunk(
   'auth/listenToAuthChanges',
   async (_, { dispatch }) => {
@@ -127,12 +123,10 @@ export const listenToAuthChanges = createAsyncThunk(
         }
       });
       
-      // Return the unsubscribe function directly
       resolve(unsubscribe);
     });
   }
 );
-
 
 // Logout action
 export const logoutAdmin = createAsyncThunk(
@@ -140,6 +134,41 @@ export const logoutAdmin = createAsyncThunk(
   async () => {
     await auth.signOut();
     localStorage.removeItem('adminAuth');
+  }
+);
+
+// Send password reset email
+export const sendResetPasswordEmail = createAsyncThunk(
+  'auth/sendResetPasswordEmail',
+  async (email, { rejectWithValue }) => {
+    try {
+      if (!email) {
+        throw new Error('Email is required');
+      }
+      if (!/\S+@\S+\.\S+/.test(email)) {
+        throw new Error('Invalid email format');
+      }
+      await sendPasswordResetEmail(auth, email);
+      toast.success('Password reset email sent successfully. Please check your inbox.');
+      return { success: true, message: 'Password reset email sent successfully.' };
+    } catch (error) {
+      let errorMessage = 'Failed to send password reset email';
+      switch (error.code) {
+        case 'auth/user-not-found':
+          errorMessage = 'No user found with this email address';
+          break;
+        case 'auth/invalid-email':
+          errorMessage = 'Invalid email format';
+          break;
+        case 'auth/too-many-requests':
+          errorMessage = 'Too many requests. Please try again later.';
+          break;
+        default:
+          errorMessage = error.message || errorMessage;
+      }
+      toast.error(errorMessage);
+      return rejectWithValue(errorMessage);
+    }
   }
 );
 
@@ -152,7 +181,7 @@ const authSlice = createSlice({
     isAuthenticated: false,
     authChecked: false,
   },
- reducers: {
+  reducers: {
     clearError: (state) => {
       state.error = null;
     },
@@ -182,13 +211,11 @@ const authSlice = createSlice({
         state.user = action.payload;
         state.isAuthenticated = true;
         state.error = null;
-        toast.success('Login successful');
       })
       .addCase(loginAdmin.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
-      
       // Persisted auth check cases
       .addCase(checkPersistedAuth.pending, (state) => {
         state.loading = true;
@@ -205,7 +232,6 @@ const authSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
       // Logout cases
       .addCase(logoutAdmin.pending, (state) => {
         state.loading = true;
@@ -214,11 +240,22 @@ const authSlice = createSlice({
         state.loading = false;
         state.user = null;
         state.isAuthenticated = false;
-        toast.info('Logged out successfully');
       })
       .addCase(logoutAdmin.rejected, (state) => {
         state.loading = false;
-        toast.error('Logout failed');
+      })
+      // Password reset cases
+      .addCase(sendResetPasswordEmail.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(sendResetPasswordEmail.fulfilled, (state) => {
+        state.loading = false;
+        state.error = null;
+      })
+      .addCase(sendResetPasswordEmail.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   }
 });

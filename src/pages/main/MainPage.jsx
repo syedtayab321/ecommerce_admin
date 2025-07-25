@@ -31,7 +31,7 @@ const MainPage = () => {
           isSidebarOpen ? "ml-64" : "ml-20"
         }`}
       >
-        <div className="p-6">
+        <div className="p-3">
           {/* Render the selected section */}
           {selectedSection === "dashboard" && <Dashboard/>}
           {selectedSection === "products" && <ProductsPage/>}

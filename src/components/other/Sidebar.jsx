@@ -80,9 +80,9 @@ const Sidebar = ({ onSelect, isOpen, setIsOpen }) => {
         {isOpen ? (
           <div className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-              <span className="text-white font-bold text-sm">S</span>
+              <span className="text-white font-bold text-sm">D</span>
             </div>
-            <h1 className="text-xl font-bold">Shop Admin</h1>
+            <h1 className="text-xl font-bold">Direct Buy</h1>
           </div>
         ) : (
           <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center mx-auto">

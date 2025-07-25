@@ -1,5 +1,6 @@
 import React from 'react';
 import { FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import { motion } from 'framer-motion';
 
 const Pagination = ({ currentPage, itemsPerPage, totalItems, onPageChange }) => {
   const totalPages = Math.ceil(totalItems / itemsPerPage);
@@ -20,19 +21,28 @@ const Pagination = ({ currentPage, itemsPerPage, totalItems, onPageChange }) => 
   if (totalPages <= 1) return null;
 
   return (
-    <div className="flex items-center justify-between">
-      <div className="text-sm text-gray-700">
-        Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{' '}
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="flex flex-col sm:flex-row sm:items-center sm:justify-between"
+    >
+      <div className="text-sm text-gray-700 dark:text-gray-300">
+        Showing{' '}
+        <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{' '}
         <span className="font-medium">{Math.min(currentPage * itemsPerPage, totalItems)}</span> of{' '}
         <span className="font-medium">{totalItems}</span> products
       </div>
 
-      <nav className="flex space-x-2">
+      <nav
+        className="flex space-x-2 mt-2 sm:mt-0"
+        aria-label="Pagination"
+      >
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className={`p-1 rounded-md ${currentPage === 1 ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-100'}`}
+          className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50"
         >
+          <span className="sr-only">Previous</span>
           <FiChevronLeft className="h-5 w-5" />
         </button>
 
@@ -40,10 +50,10 @@ const Pagination = ({ currentPage, itemsPerPage, totalItems, onPageChange }) => 
           <button
             key={page}
             onClick={() => onPageChange(page)}
-            className={`px-3 py-1 rounded-md text-sm font-medium ${
+            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
               currentPage === page
-                ? 'bg-indigo-600 text-white'
-                : 'text-gray-700 hover:bg-gray-100'
+                ? 'z-10 bg-indigo-50 dark:bg-indigo-900/50 border-indigo-500 text-indigo-600 dark:text-indigo-400'
+                : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600'
             }`}
           >
             {page}
@@ -53,12 +63,13 @@ const Pagination = ({ currentPage, itemsPerPage, totalItems, onPageChange }) => 
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className={`p-1 rounded-md ${currentPage === totalPages ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-100'}`}
+          className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50"
         >
+          <span className="sr-only">Next</span>
           <FiChevronRight className="h-5 w-5" />
         </button>
       </nav>
-    </div>
+    </motion.div>
   );
 };
 
